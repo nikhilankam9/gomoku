@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <vector>
 #include "board.h"
+#include "mcts.h"
 using namespace std;
 
 bool validMove(int board[15][15], int color, int position[2]){
@@ -29,7 +31,9 @@ void play(int board[15][15], int color, int position[2]){
 }
 
 void search(int board[15][15], int color, int position[2]){
-    cout<<"searching the board\n";
+    Node *n = new Node();
+    SetBoard(n, board);
+    PrintBoard(n);
 }
 
 void display(int board[15][15]){
@@ -59,6 +63,8 @@ int main() {
     int board[15][15] = {0};
     int playerTurn = 0; // even = Black's turn and odd = White's turn
 
+    int count = 0;
+
     while (true){
         int position[2];
         cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
@@ -82,9 +88,14 @@ int main() {
         //TODO end condition when no more moves possible
         playerTurn++;
         cout<<endl;
+
+        count++;
+        if(count>1){
+            break;
+        }
     }
     
-    display(board);
+    int pos[2];
+    search(board, 1, pos);
     return 0;
 }
-
