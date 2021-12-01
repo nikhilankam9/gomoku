@@ -2,9 +2,11 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <chrono>
 #include "board.h"
 #include "mcts.h"
 using namespace std;
+using namespace std::chrono;
 
 bool validMove(int board[15][15], int color, int position[2]){
     if(position[0] < 0 || position[0] > 14){
@@ -30,10 +32,19 @@ void play(int board[15][15], int color, int position[2]){
     board[position[0]][position[1]] = color;
 }
 
+string toString(int color){
+    if(color == white){
+        return "White";
+    }
+    if(color == black){
+        return "Black";
+    }
+    return "";
+}
+
 void search(int board[15][15], int color, int position[2]){
-    Node *n = new Node();
-    SetBoard(n, board);
-    PrintBoard(n);
+    MCTS *tree = new MCTS(new Node(board));
+    tree->NextBestMove(position, color);
 }
 
 void display(int board[15][15]){
@@ -45,16 +56,7 @@ void display(int board[15][15]){
         cout<<"|"<<endl;
     }
     cout<<"-------------------------------------------------------------"<<endl;
-}
-
-string toString(int color){
-    if(color == white){
-        return "White";
-    }
-    if(color == black){
-        return "Black";
-    }
-    return "";
+    cout<<endl;
 }
 
 int main() {
@@ -62,40 +64,64 @@ int main() {
 
     int board[15][15] = {0};
     int playerTurn = 0; // even = Black's turn and odd = White's turn
+    int plays = 1;
+    int position[2];
 
-    int count = 0;
+    while (plays <= 225){
+        // //Human vs Computer
+        // if(playerTurn%2 == 0){
+        //     cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
+        //     cin>>position[0]>>position[1];
+        //     position[0]--; 
+        //     position[1]--;
+        //     play(board, playerTurn%2 + 1, position);
+        // }else{
+        //     position[0] = position[1] = -1;
+        //     search(board, playerTurn%2 +1, position);
+        //     if(position[0] == -1 || position[1] == -1){
+        //         cout<<"Tie!!"<<endl;
+        //         display(board);
+        //     }
+        //     cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]+1<<","<<position[1]+1<<")"<<endl;
 
-    while (true){
-        int position[2];
-        cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
-        cin>>position[0]>>position[1];
-        position[0]--;
-        position[1]--;
+        //     play(board, playerTurn%2 + 1, position);
+        // }
 
-        if(!validMove(board, playerTurn%2 + 1, position)){
-            continue;
+        // //Human vs Human
+        // position[0] = position[1] = -1;
+        // cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
+        // cin>>position[0]>>position[1];
+        // position[0]--;
+        // position[1]--;
+        // if(!validMove(board, playerTurn%2 + 1, position)){
+        //     continue;
+        // }
+        // play(board, playerTurn%2 + 1, position);
+
+        //Computer vs Computer
+        auto start = high_resolution_clock::now();
+        search(board, playerTurn%2 +1, position);
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        cout<<"Time taken: "<<duration.count()<<endl;
+
+        if(position[0] == -1 || position[1] == -1){
+            cout<<"Tie!!"<<endl;
+            display(board);
         }
-
+        cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]+1<<","<<position[1]+1<<")"<<endl;
         play(board, playerTurn%2 + 1, position);
 
+        //Common
         int status = checkBoardStatus(board);
         if (status == black || status == white){
             cout<<"Winner!!: "<<toString(status)<<endl;
             break;
         }
-        display(board);
 
-        //TODO end condition when no more moves possible
         playerTurn++;
-        cout<<endl;
-
-        count++;
-        if(count>1){
-            break;
-        }
+        plays++;
     }
-    
-    int pos[2];
-    search(board, 1, pos);
+    display(board);
     return 0;
 }
