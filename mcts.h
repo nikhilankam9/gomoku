@@ -5,6 +5,8 @@
 #include <utility>
 using namespace std;
 
+const int randomExpansion = 1;
+
 class Node {
 	public:
 		//Setters
@@ -30,7 +32,7 @@ class Node {
 		Node* BestChildWithUCB();
 		Node* RandomChild();
 		vector<pair<int, int>> AvailableMoves();
-		void Expand(int noOfMoves, int color);
+		void Expand(int noOfMoves, int color, int type);
 		void MakeMove(int row, int col, int color);
 		int Simulate(int color);
 		bool ContinuePlaying(int color);
@@ -57,12 +59,17 @@ class Node {
 
 class MCTS{
 	public:
-		MCTS(Node* r);
+		MCTS(Node* r, int n, int s, int c, int ex);
 		void NextBestMove(int *pos, int color);
 		void PrintTree();
 
 	private:
 		Node* root;
+		int nodesToExpand;
+		int simulationLimit;
+		int expansionConstraint;
+
+		int expansionType;
 };
 
 float UCB(int nodeWins, int nodeSimulations, int totalSimulations);

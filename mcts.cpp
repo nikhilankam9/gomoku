@@ -8,29 +8,32 @@
 using namespace std;
 
 
-MCTS::MCTS(Node* r){
+MCTS::MCTS(Node* r, int n, int s, int c, int ex){
 	root = r;
+    nodesToExpand = n;
+    simulationLimit = s;
+    expansionConstraint = c;
+    expansionType = ex;
 }
 
 void MCTS::NextBestMove(int *pos, int color){
     // cout<<"MCTS::NextBestMove: "<<color<<endl;
     Node* now = NULL;
     Node* next = NULL;
-    int count = 0;
-    while(count<1000){
+    int numberOfSimulations = 0;
+    while(numberOfSimulations < simulationLimit){
         now = next = root;
         do {
             now = next;
             next = now->BestChildWithUCB();
         } while (next != NULL);
-        now->Expand(20, color);
-        now = now->RandomChild();
-        if(now == NULL){
-            cout<<"NULL pointer"<<endl;
+        if(now->Simulations() > 1){
+            now->Expand(nodesToExpand, color, expansionType);
+            now = now->RandomChild();
         }
         now->BackPropogate(now->Simulate(color));
         
-        count++;
+        numberOfSimulations++;
     }
 
     next = root->BestChildWithUCB();
@@ -39,7 +42,7 @@ void MCTS::NextBestMove(int *pos, int color){
         pos[1] = next->MoveColumn();
     }
 
-    // this->PrintTree();
+    this->PrintTree();
 }
 
 Node* Node::BestChildWithUCB(){
@@ -71,7 +74,7 @@ Node* Node::RandomChild(){
     return children[randInd];
 }
 
-void Node::Expand(int noOfMoves, int color){
+void Node::Expand(int noOfMoves, int color, int type){
     vector<pair<int, int>> moves = AvailableMoves();
     int availableMoves = moves.size();
     if(noOfMoves == -1){
@@ -79,7 +82,10 @@ void Node::Expand(int noOfMoves, int color){
     }
     // cout<<"Node::Expand: ("<<noOfMoves<<", "<<availableMoves<<")"<<endl;
     while(noOfMoves--){
-        int moveIndex = rand() % availableMoves;
+        int moveIndex = 0;
+        if(type == randomExpansion){
+            moveIndex = rand() % availableMoves;
+        }
         pair<int, int> move = moves[moveIndex];
         Node* child = new Node(board);
         child->MakeMove(move.first, move.second, color); 
@@ -162,7 +168,9 @@ void MCTS::PrintTree(){
 }
 
 void Node::PrintNode(){
+    if(wins>0){
     cout<<"Level: "<<level<<", color: "<<color<<", (w: "<<wins<<", s: "<<simulations<<")"<<endl;
+    }
 }
 
 bool Node::ContinuePlaying(int color){
@@ -271,6 +279,5 @@ float UCB(int nodeWins, int nodeSimulations, int totalSimulations){
     if(nodeSimulations == 0){
         return INT_MAX;
     }
-    return float(nodeWins)/float(nodeSimulations) + 
-        1.411 * sqrt(log(totalSimulations)/float(nodeSimulations));
+    return float(nodeWins)/float(nodeSimulations) + sqrt(float(2 * log(totalSimulations))/float(nodeSimulations));
 }

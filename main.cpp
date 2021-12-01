@@ -43,7 +43,7 @@ string toString(int color){
 }
 
 void search(int board[15][15], int color, int position[2]){
-    MCTS *tree = new MCTS(new Node(board));
+    MCTS *tree = new MCTS(new Node(board), 16, 3000, 1, randomExpansion);
     tree->NextBestMove(position, color);
 }
 
@@ -66,6 +66,9 @@ int main() {
     int playerTurn = 0; // even = Black's turn and odd = White's turn
     int plays = 1;
     int position[2];
+
+    board[7][7] = 1;
+    playerTurn = 1;
 
     while (plays <= 225){
         // //Human vs Computer
