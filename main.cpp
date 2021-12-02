@@ -28,10 +28,6 @@ bool validMove(int board[15][15], int color, int position[2]){
     return true;
 }
 
-void play(int board[15][15], int color, int position[2]){
-    board[position[0]][position[1]] = color;
-}
-
 string toString(int color){
     if(color == white){
         return "White";
@@ -42,9 +38,19 @@ string toString(int color){
     return "";
 }
 
+void play(int board[15][15], int color, int position[2]){
+    board[position[0]][position[1]] = color;
+}
+
 void search(int board[15][15], int color, int position[2]){
-    MCTS *tree = new MCTS(new Node(board), 16, 3000, 1, randomExpansion);
+    auto start = high_resolution_clock::now();
+
+    MCTS *tree = new MCTS(new Node(board), 16, 2000, -1, weightedExpansion);
     tree->NextBestMove(position, color);
+
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    cout<<"Time taken: "<<duration.count()<<endl;
 }
 
 void display(int board[15][15]){
@@ -67,28 +73,30 @@ int main() {
     int plays = 1;
     int position[2];
 
-    board[7][7] = 1;
-    playerTurn = 1;
+    // board[7][7] = 1;
+    // playerTurn = 1;
 
     while (plays <= 225){
-        // //Human vs Computer
-        // if(playerTurn%2 == 0){
-        //     cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
-        //     cin>>position[0]>>position[1];
-        //     position[0]--; 
-        //     position[1]--;
-        //     play(board, playerTurn%2 + 1, position);
-        // }else{
-        //     position[0] = position[1] = -1;
-        //     search(board, playerTurn%2 +1, position);
-        //     if(position[0] == -1 || position[1] == -1){
-        //         cout<<"Tie!!"<<endl;
-        //         display(board);
-        //     }
-        //     cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]+1<<","<<position[1]+1<<")"<<endl;
+        display(board);
 
-        //     play(board, playerTurn%2 + 1, position);
-        // }
+        //Human vs Computer
+        if(playerTurn%2 == 0){
+            cout<<toString(playerTurn%2 + 1)<<" turn: Enter position (i, j) where 1<=i,j<=15\n";
+            cin>>position[0]>>position[1];
+            // position[0]--; 
+            // position[1]--;
+            play(board, playerTurn%2 + 1, position);
+        }else{
+            position[0] = position[1] = -1;
+            search(board, playerTurn%2 +1, position);
+            if(position[0] == -1 || position[1] == -1){
+                cout<<"Tie!!"<<endl;
+                display(board);
+            }
+            cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]<<","<<position[1]<<")"<<endl;
+
+            play(board, playerTurn%2 + 1, position);
+        }
 
         // //Human vs Human
         // position[0] = position[1] = -1;
@@ -101,19 +109,14 @@ int main() {
         // }
         // play(board, playerTurn%2 + 1, position);
 
-        //Computer vs Computer
-        auto start = high_resolution_clock::now();
-        search(board, playerTurn%2 +1, position);
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(stop - start);
-        cout<<"Time taken: "<<duration.count()<<endl;
-
-        if(position[0] == -1 || position[1] == -1){
-            cout<<"Tie!!"<<endl;
-            display(board);
-        }
-        cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]+1<<","<<position[1]+1<<")"<<endl;
-        play(board, playerTurn%2 + 1, position);
+        // // Computer vs Computer
+        // search(board, playerTurn%2 +1, position);
+        // if(position[0] == -1 || position[1] == -1){
+        //     cout<<"Tie!!"<<endl;
+        //     display(board);
+        // }
+        // cout<<plays<<"- "<<toString(playerTurn%2 + 1)<<":("<<position[0]+1<<","<<position[1]+1<<")"<<endl;
+        // play(board, playerTurn%2 + 1, position);
 
         //Common
         int status = checkBoardStatus(board);

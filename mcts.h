@@ -6,6 +6,7 @@
 using namespace std;
 
 const int randomExpansion = 1;
+const int weightedExpansion = 2;
 
 class Node {
 	public:
@@ -17,6 +18,7 @@ class Node {
 		void AddChild(Node* c);
 		void SetLevel(int l);
 		void SetColor(int color);
+		void SetWeigths(int b[15][15], int w[15][15]);
 		
 		//Getters
 		int Wins();
@@ -32,19 +34,24 @@ class Node {
 		Node* BestChildWithUCB();
 		Node* RandomChild();
 		vector<pair<int, int>> AvailableMoves();
-		void Expand(int noOfMoves, int color, int type);
+		vector<pair<int, int>> ExpansionHeuristic(int color, int n);
+		void Expand(int noOfMoves, int color, vector<pair<int, int>> moves);
 		void MakeMove(int row, int col, int color);
-		int Simulate(int color);
+		int Simulate(int color, int type);
+		void CalculateWts();
 		bool ContinuePlaying(int color);
 		void BackPropogate(int val);
 		void PrintBoard();
 		void PrintNode();
+		void PrintWeights();
 
 		//Constructor
 		Node(int b[15][15]);
 
 	private:
 		int board[15][15];
+		int playerBlackWeightage[15][15];
+		int playerWhiteWeightage[15][15];
 		Node* parent;
 		vector<Node*> children;
 		
@@ -65,11 +72,11 @@ class MCTS{
 
 	private:
 		Node* root;
-		int nodesToExpand;
-		int simulationLimit;
-		int expansionConstraint;
+		int nodesToExpand; //no of nodes to expand(breadth of the tree)
+		int simulationLimit; //
+		int expansionConstraint; //no of simulations before expanding
 
-		int expansionType;
+		int expansionType; //type of expansion
 };
 
 float UCB(int nodeWins, int nodeSimulations, int totalSimulations);

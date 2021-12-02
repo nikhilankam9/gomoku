@@ -2,11 +2,19 @@
 #include <utility>
 #include <math.h>
 #include <queue>
+#include <algorithm>
 #include <climits>
 #include "mcts.h"
 #include "board.h"
+#include "heuristic.h"
 using namespace std;
 
+class myComparator {
+  public:
+    bool operator() (pair<int, pair<int, int>> &p1, pair<int, pair<int, int>> &p2) {
+      return p1.first < p2.first;
+    }
+};
 
 MCTS::MCTS(Node* r, int n, int s, int c, int ex){
 	root = r;
@@ -16,22 +24,71 @@ MCTS::MCTS(Node* r, int n, int s, int c, int ex){
     expansionType = ex;
 }
 
+vector<pair<int, int>> Node::ExpansionHeuristic(int color, int n){
+    // cout<<"Node::ExpansionHeuristic\n";
+    vector<pair<int, int>> moves;
+    priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, myComparator> pq;
+    for(int row = 0; row<15; row++){
+        for(int col=0;col<15;col++){
+            if(board[row][col] == 0){
+                int wt = 0;
+                // if(color == black){
+                //     wt = playerBlackWeightage[row][col]; //- playerWhiteWeightage[row][col];
+                // }else{
+                //     wt = playerWhiteWeightage[row][col]; //- playerBlackWeightage[row][col];
+                // }
+                wt = playerWhiteWeightage[row][col] + playerBlackWeightage[row][col];
+                pq.push(make_pair(wt, make_pair(row, col)));
+            }
+        }
+    }
+    while(pq.size()){
+        // cout<<pq.top().first<<" "<<pq.top().second.first<<endl;
+        if(pq.top().first <= 0){
+            break;
+        }
+        moves.push_back(pq.top().second);
+        if(moves.size() >= n){
+            return moves;
+        }
+        pq.pop();
+    }
+    return moves;
+}
+
+void Node::CalculateWts(){
+    CalculateWeights(board, playerBlackWeightage, black);
+    CalculateWeights(board, playerWhiteWeightage, white);
+}
+
 void MCTS::NextBestMove(int *pos, int color){
     // cout<<"MCTS::NextBestMove: "<<color<<endl;
     Node* now = NULL;
     Node* next = NULL;
     int numberOfSimulations = 0;
+    root->CalculateWts();
+    root->PrintWeights();
     while(numberOfSimulations < simulationLimit){
         now = next = root;
         do {
             now = next;
             next = now->BestChildWithUCB();
         } while (next != NULL);
-        if(now->Simulations() > 1){
-            now->Expand(nodesToExpand, color, expansionType);
+        if(now->Simulations() > expansionConstraint){
+            vector<pair<int, int>> moves;
+            if(expansionType == randomExpansion){
+                moves = now->AvailableMoves();
+                random_shuffle(moves.begin(), moves.end());
+            }
+            if(expansionType == weightedExpansion){
+                moves = now->ExpansionHeuristic(color, 225);
+            }
+            now->Expand(nodesToExpand, color, moves);
             now = now->RandomChild();
         }
-        now->BackPropogate(now->Simulate(color));
+        if(now != NULL){
+            now->BackPropogate(now->Simulate(color, randomExpansion));
+        }
         
         numberOfSimulations++;
     }
@@ -74,52 +131,68 @@ Node* Node::RandomChild(){
     return children[randInd];
 }
 
-void Node::Expand(int noOfMoves, int color, int type){
-    vector<pair<int, int>> moves = AvailableMoves();
-    int availableMoves = moves.size();
-    if(noOfMoves == -1){
-        noOfMoves = availableMoves;
-    }
-    // cout<<"Node::Expand: ("<<noOfMoves<<", "<<availableMoves<<")"<<endl;
-    while(noOfMoves--){
-        int moveIndex = 0;
-        if(type == randomExpansion){
-            moveIndex = rand() % availableMoves;
+void Node::Expand(int noOfMoves, int color, vector<pair<int, int>> moves){
+    // cout<<"Node::Expand: "<<moves.size()<<endl;
+
+    int i = 0;
+    while(i < moves.size()){
+        if(i > noOfMoves){
+            break;
         }
-        pair<int, int> move = moves[moveIndex];
+        pair<int, int> move = moves[i];
         Node* child = new Node(board);
         child->MakeMove(move.first, move.second, color); 
         child->SetParent(this);
         child->SetLevel(this->Level() + 1);
+        child->CalculateWts();
         this->children.push_back(child);
 
-        //Ignoring the currently made move
-        moves[moveIndex] = moves[availableMoves-1];
-        availableMoves--;
+        i++;
     }
 }
 
-int Node::Simulate(int color){
-    vector<pair<int, int>> moves = AvailableMoves();
-    int availableMoves = moves.size();
+int Node::Simulate(int color, int type){
+    // cout<<"Node::Simulate: "<<color<<endl;
+
     int player = color;
-    // cout<<"Node::Simulate: "<<availableMoves<<", "<<color<<endl;
     Node* tempNode = new Node(board);
-    int totalMoves = availableMoves;
-    while(totalMoves--){
-        int moveIndex = rand() % availableMoves;
-        pair<int, int> move = moves[moveIndex];
-        tempNode->MakeMove(move.first, move.second, player);
+
+    vector<pair<int, int>> moves;
+    if(type == randomExpansion){
+        moves = AvailableMoves();
+        random_shuffle(moves.begin(), moves.end());
+        for(int itr = 0; itr < moves.size(); itr++){
+            pair<int, int> move = moves[itr];
+            tempNode->MakeMove(move.first, move.second, player);
         
-        if(!ContinuePlaying(player)){
-            break;
+            if(!ContinuePlaying(player)){
+                break;
+            }
+        
+            player = player%2 + 1;
         }
-        
-        player = player%2 + 1;
-        //Ignoring the currently made move
-        moves[moveIndex] = moves[availableMoves-1];
-        availableMoves--;
     }
+    if(type == weightedExpansion){
+        moves = ExpansionHeuristic(color, 1);
+        while(moves.size() > 0){
+            pair<int, int> move = moves[0];
+            moves.pop_back();
+
+            tempNode->MakeMove(move.first, move.second, player);
+            int b[15][15], w[15][15];
+            tempNode->SetWeigths(b, w);
+            tempNode->CalculateWts();
+
+            if(!ContinuePlaying(player)){
+                break;
+            }
+            
+            player = player%2 + 1;
+
+            moves = tempNode->ExpansionHeuristic(player, 1);
+        }
+    }
+
     if(checkBoardStatus(board) == color){
         return 1;
     }
@@ -140,15 +213,25 @@ Node::Node(int b[15][15]){
     for (int i=0; i<15;i++){
 		for(int j=0;j<15;j++){
 			board[i][j] = b[i][j];
+            playerWhiteWeightage[i][j] = playerBlackWeightage[i][j] = 0;
 		}
 	}
-
+    
     wins = 0;
     simulations = 0;
     parent = NULL;
     moveRow = -1;
     moveCol = -1;
     level = 0;
+}
+
+void Node::SetWeigths(int b[15][15], int w[15][15]){
+    for (int i=0; i<15;i++){
+		for(int j=0;j<15;j++){
+            playerWhiteWeightage[i][j] = w[i][j];
+            playerBlackWeightage[i][j] = b[i][j];
+		}
+	}
 }
 
 void MCTS::PrintTree(){
@@ -171,6 +254,17 @@ void Node::PrintNode(){
     if(wins>0){
     cout<<"Level: "<<level<<", color: "<<color<<", (w: "<<wins<<", s: "<<simulations<<")"<<endl;
     }
+}
+
+void Node::PrintWeights(){
+    for (int i = 0; i <15; i++){
+        cout<<"-------------------------------------------------------------"<<endl;
+        for (int j = 0; j < 15; j++){
+            cout<<"|"<<playerBlackWeightage[i][j]<<","<<playerWhiteWeightage[i][j];
+        }
+        cout<<"|"<<endl;
+    }
+    cout<<"-------------------------------------------------------------"<<endl;
 }
 
 bool Node::ContinuePlaying(int color){

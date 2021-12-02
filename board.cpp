@@ -1,3 +1,4 @@
+#include <vector>
 #include "board.h"
 using namespace std;
 
@@ -100,42 +101,30 @@ int checkDiagonal_2(int board[15][15], int color, int row, int col){
 }
 
 int checkBoardStatus(int board[15][15]){
-    for (int i=0;i<15;i++){
-        if(checkHorizontal(board, black, i)){
-            return black;
-        }
-        if(checkHorizontal(board, white, i)){
-            return white;
-        }
-        if(checkVertical(board, black, i)){
-            return black;
-        }
-        if(checkVertical(board, white, i)){
-            return white;
-        }
-        if(checkDiagonal_1(board, black, 0, i)){
-            return black;
-        }
-        if(checkDiagonal_1(board, white, 0, i)){
-            return white;
-        }
-        if(checkDiagonal_1(board, black, i, 0)){
-            return black;
-        }
-        if(checkDiagonal_1(board, white, i, 0)){
-            return white;
-        }
-        if(checkDiagonal_2(board, black, 0, i)){
-            return black;
-        }
-        if(checkDiagonal_2(board, white, 0, i)){
-            return white;
-        }
-        if(checkDiagonal_2(board, black, i, 14)){
-            return black;
-        }
-        if(checkDiagonal_2(board, white, i, 14)){
-            return white;
+    vector<int> players;
+    players.push_back(black);
+    players.push_back(white);
+
+    for(auto p: players){
+        for (int i=0;i<15;i++){
+            if(checkHorizontal(board, p, i)){
+                return black;
+            }
+            if(checkVertical(board, p, i)){
+                return black;
+            }
+            if(checkDiagonal_1(board, p, 0, i)){
+                return black;
+            }
+            if(checkDiagonal_1(board, p, i, 0)){
+                return black;
+            }
+            if(checkDiagonal_2(board, p, 0, i)){
+                return black;
+            }
+            if(checkDiagonal_2(board, p, i, 14)){
+                return black;
+            }
         }
     }
     return 0;
