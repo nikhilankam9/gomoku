@@ -3,14 +3,41 @@
 #include "heuristic.h"
 using namespace std;
 
-void CalculateWeights(int board[15][15], int weights[15][15], int color){
-    CalculateHorizontal(board, weights, color);
-    CalculateVertical(board, weights, color);
-    CalculateDiagonalBack(board, weights, color);
-    CalculateDiagonalForward(board, weights, color);
+void CalculateWeights(int board[15][15], int weights[15][15], int color, bool player){
+    CalculateHorizontal(board, weights, color, player);
+    CalculateVertical(board, weights, color, player);
+    CalculateDiagonalBack(board, weights, color, player);
+    CalculateDiagonalForward(board, weights, color, player);
 }
 
-void CalculateHorizontal(int board[15][15], int weights[15][15], int color){
+int getMultiplier(int inRow, bool player){
+    int multiplier;
+    if(inRow == 1){
+        multiplier = 1;
+    }
+    if(inRow == 2){
+        multiplier = 2;
+    }
+    if(player){
+        if(inRow == 3){
+            multiplier = 10;
+        }
+        if(inRow == 4){
+            multiplier = 50;
+        }
+    }
+    if(!player){
+        if(inRow == 3){
+            multiplier = 7;
+        }
+        if(inRow == 4){
+            multiplier = 25;
+        }
+    }
+    return multiplier;
+}
+
+void CalculateHorizontal(int board[15][15], int weights[15][15], int color, bool player){
     for(int row=0; row< 15; row++){
         for(auto p: HorizontalPatterns(board, color, row)){
             int inRow = p.second - p.first + 1;
@@ -23,7 +50,9 @@ void CalculateHorizontal(int board[15][15], int weights[15][15], int color){
                 rightClosed = false;
             }
 
-            int multiplier = int(!leftClosed + !rightClosed);
+            int multiplier = getMultiplier(inRow, player);
+            //  = int(!leftClosed + !rightClosed);
+             
             if(!leftClosed){
                 weights[row][p.first - 1] += inRow * multiplier;
             }
@@ -34,7 +63,7 @@ void CalculateHorizontal(int board[15][15], int weights[15][15], int color){
     }
 }
 
-void CalculateVertical(int board[15][15], int weights[15][15], int color){
+void CalculateVertical(int board[15][15], int weights[15][15], int color, bool player){
     for(int col=0; col< 15; col++){
         for(auto p: VerticalPatterns(board, color, col)){
             int inRow = p.second - p.first + 1;
@@ -47,7 +76,11 @@ void CalculateVertical(int board[15][15], int weights[15][15], int color){
                 bottomClosed = false;
             }
 
-            int multiplier = int(!topClosed + !bottomClosed);
+            // int multiplier = int(!topClosed + !bottomClosed);
+
+            int multiplier = getMultiplier(inRow, player);
+
+
             if(!topClosed){
                 weights[p.first - 1][col] += inRow * multiplier;
             }
@@ -58,7 +91,7 @@ void CalculateVertical(int board[15][15], int weights[15][15], int color){
     }
 }
 
-void CalculateDiagonalBack(int board[15][15], int weights[15][15], int color){
+void CalculateDiagonalBack(int board[15][15], int weights[15][15], int color, bool player){
     for(int c=0; c< 15; c++){
         for(auto p: DiagonalPatternsBackSlash(board, color, 0, c)){
             int inRow = p.second;
@@ -71,7 +104,8 @@ void CalculateDiagonalBack(int board[15][15], int weights[15][15], int color){
                 bottomClosed = false;
             }
 
-            int multiplier = int(!topClosed + !bottomClosed);
+            int multiplier = getMultiplier(inRow, player);
+
             if(!topClosed){
                 weights[p.first.first - 1][p.first.second - 1] += inRow * multiplier;
             }
@@ -91,7 +125,10 @@ void CalculateDiagonalBack(int board[15][15], int weights[15][15], int color){
                     bottomClosed = false;
                 }
 
-                int multiplier = int(!topClosed + !bottomClosed);
+                // int multiplier = int(!topClosed + !bottomClosed);
+                int multiplier = getMultiplier(inRow, player);
+
+
                 if(!topClosed){
                     weights[p.first.first - 1][p.first.second - 1] += inRow * multiplier;
                 }
@@ -103,7 +140,7 @@ void CalculateDiagonalBack(int board[15][15], int weights[15][15], int color){
     }
 }
 
-void CalculateDiagonalForward(int board[15][15], int weights[15][15], int color){
+void CalculateDiagonalForward(int board[15][15], int weights[15][15], int color, bool player){
     for(int c=0; c< 15; c++){
         for(auto p: DiagonalPatternsForwardSlash(board, color, 0, c)){
             int inRow = p.second;
@@ -116,7 +153,9 @@ void CalculateDiagonalForward(int board[15][15], int weights[15][15], int color)
                 bottomClosed = false;
             }
 
-            int multiplier = int(!topClosed + !bottomClosed);
+            // int multiplier = int(!topClosed + !bottomClosed);
+            int multiplier = getMultiplier(inRow, player);
+
             if(!topClosed){
                 weights[p.first.first - 1][p.first.second + 1] += inRow * multiplier;
             }
@@ -136,7 +175,8 @@ void CalculateDiagonalForward(int board[15][15], int weights[15][15], int color)
                     bottomClosed = false;
                 }
 
-                int multiplier = int(!topClosed + !bottomClosed);
+                int multiplier = getMultiplier(inRow, player);
+
                 if(!topClosed){
                     weights[p.first.first - 1][p.first.second + 1] += inRow * multiplier;
                 }

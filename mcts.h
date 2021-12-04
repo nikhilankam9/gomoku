@@ -38,7 +38,7 @@ class Node {
 		void Expand(int noOfMoves, int color, vector<pair<int, int>> moves);
 		void MakeMove(int row, int col, int color);
 		int Simulate(int color, int type);
-		void CalculateWts();
+		void CalculateWts(int color);
 		bool ContinuePlaying(int color);
 		void BackPropogate(int val);
 		void PrintBoard();

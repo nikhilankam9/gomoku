@@ -32,20 +32,18 @@ vector<pair<int, int>> Node::ExpansionHeuristic(int color, int n){
         for(int col=0;col<15;col++){
             if(board[row][col] == 0){
                 int wt = 0;
-                // if(color == black){
-                //     wt = playerBlackWeightage[row][col]; //- playerWhiteWeightage[row][col];
-                // }else{
-                //     wt = playerWhiteWeightage[row][col]; //- playerBlackWeightage[row][col];
-                // }
-                wt = playerWhiteWeightage[row][col] + playerBlackWeightage[row][col];
+                int w, b = 0;
+                w = playerWhiteWeightage[row][col];
+                b = playerBlackWeightage[row][col];
+                wt = w + b;
                 pq.push(make_pair(wt, make_pair(row, col)));
             }
         }
     }
+    int posWt = 0;
     while(pq.size()){
-        // cout<<pq.top().first<<" "<<pq.top().second.first<<endl;
-        if(pq.top().first <= 0){
-            break;
+        if(pq.top().first > 0){
+            posWt++;
         }
         moves.push_back(pq.top().second);
         if(moves.size() >= n){
@@ -53,12 +51,14 @@ vector<pair<int, int>> Node::ExpansionHeuristic(int color, int n){
         }
         pq.pop();
     }
+    random_shuffle(moves.begin() + posWt, moves.end());
     return moves;
 }
 
-void Node::CalculateWts(){
-    CalculateWeights(board, playerBlackWeightage, black);
-    CalculateWeights(board, playerWhiteWeightage, white);
+void Node::CalculateWts(int color){
+    bool player = (color == black);
+    CalculateWeights(board, playerBlackWeightage, black, player);
+    CalculateWeights(board, playerWhiteWeightage, white, !player);
 }
 
 void MCTS::NextBestMove(int *pos, int color){
@@ -66,8 +66,8 @@ void MCTS::NextBestMove(int *pos, int color){
     Node* now = NULL;
     Node* next = NULL;
     int numberOfSimulations = 0;
-    root->CalculateWts();
-    root->PrintWeights();
+    root->CalculateWts(color);
+    // root->PrintWeights();
     while(numberOfSimulations < simulationLimit){
         now = next = root;
         do {
@@ -87,7 +87,7 @@ void MCTS::NextBestMove(int *pos, int color){
             now = now->RandomChild();
         }
         if(now != NULL){
-            now->BackPropogate(now->Simulate(color, randomExpansion));
+            now->BackPropogate(now->Simulate(color, weightedExpansion));
         }
         
         numberOfSimulations++;
@@ -99,7 +99,7 @@ void MCTS::NextBestMove(int *pos, int color){
         pos[1] = next->MoveColumn();
     }
 
-    this->PrintTree();
+    // this->PrintTree();
 }
 
 Node* Node::BestChildWithUCB(){
@@ -144,7 +144,7 @@ void Node::Expand(int noOfMoves, int color, vector<pair<int, int>> moves){
         child->MakeMove(move.first, move.second, color); 
         child->SetParent(this);
         child->SetLevel(this->Level() + 1);
-        child->CalculateWts();
+        child->CalculateWts(color);
         this->children.push_back(child);
 
         i++;
@@ -153,10 +153,8 @@ void Node::Expand(int noOfMoves, int color, vector<pair<int, int>> moves){
 
 int Node::Simulate(int color, int type){
     // cout<<"Node::Simulate: "<<color<<endl;
-
     int player = color;
     Node* tempNode = new Node(board);
-
     vector<pair<int, int>> moves;
     if(type == randomExpansion){
         moves = AvailableMoves();
@@ -172,28 +170,38 @@ int Node::Simulate(int color, int type){
             player = player%2 + 1;
         }
     }
+    int counter = 0;
     if(type == weightedExpansion){
-        moves = ExpansionHeuristic(color, 1);
+        int b[15][15], w[15][15];
+        tempNode->SetWeigths(playerBlackWeightage, playerWhiteWeightage);
+        tempNode->CalculateWts(color);
+        moves = ExpansionHeuristic(color, 225);
         while(moves.size() > 0){
             pair<int, int> move = moves[0];
             moves.pop_back();
 
             tempNode->MakeMove(move.first, move.second, player);
-            int b[15][15], w[15][15];
-            tempNode->SetWeigths(b, w);
-            tempNode->CalculateWts();
-
             if(!ContinuePlaying(player)){
                 break;
             }
+
+            // if(counter % 50 == 0){
+            //     int b[15][15], w[15][15];
+            //     tempNode->SetWeigths(b, w);
+            //     tempNode->CalculateWts(color);
+            //     moves = tempNode->ExpansionHeuristic(player, 225);
+            //     random_shuffle(moves.begin(), moves.end());
+            // }
             
             player = player%2 + 1;
-
-            moves = tempNode->ExpansionHeuristic(player, 1);
+            counter++;
         }
     }
-
-    if(checkBoardStatus(board) == color){
+    int win = checkBoardStatus(board);
+    if(win == 0){
+        return 0;
+    }
+    if(win == color){
         return 1;
     }
     return 0;

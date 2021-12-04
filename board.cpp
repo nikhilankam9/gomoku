@@ -108,22 +108,22 @@ int checkBoardStatus(int board[15][15]){
     for(auto p: players){
         for (int i=0;i<15;i++){
             if(checkHorizontal(board, p, i)){
-                return black;
+                return p;
             }
             if(checkVertical(board, p, i)){
-                return black;
+                return p;
             }
             if(checkDiagonal_1(board, p, 0, i)){
-                return black;
+                return p;
             }
             if(checkDiagonal_1(board, p, i, 0)){
-                return black;
+                return p;
             }
             if(checkDiagonal_2(board, p, 0, i)){
-                return black;
+                return p;
             }
             if(checkDiagonal_2(board, p, i, 14)){
-                return black;
+                return p;
             }
         }
     }
