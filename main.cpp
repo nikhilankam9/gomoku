@@ -42,22 +42,18 @@ void play(int board[15][15], int color, int position[2]){
     board[position[0]][position[1]] = color;
 }
 
-namespace Nikhil{
-    void search_old(int board[15][15], int color, int position[2]){
-        auto start = high_resolution_clock::now();
 
-        MCTS *tree = new MCTS(new Node(board), 16, 3000, -1, weightedExpansion);
-        tree->NextBestMove(position, color);
+void search(int board[15][15], int color, int position[2]){
+    auto start = high_resolution_clock::now();
 
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(stop - start);
-        cout<<"Time taken: "<<duration.count()<<endl;
-    }
+    MCTS *tree = new MCTS(new Node(board), 12, 2000, -1, weightedExpansion);
+    tree->NextBestMove(position, color);
 
-    void search(int board[15][15], int color, int position[2]){
-        search_old(board, color + 1, position);
-    }
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    cout<<"Time taken: "<<duration.count()<<endl;
 }
+
 void display(int board[15][15]){
     for (int i = 0; i <15; i++){
         cout<<"-------------------------------------------------------------"<<endl;
@@ -115,7 +111,7 @@ int main() {
         // play(board, playerTurn%2 + 1, position);
 
         // Computer vs Computer
-        Nikhil::search(board, playerTurn%2 +1 - 1, position);
+        search(board, playerTurn%2 +1 - 1, position);
         if(position[0] == -1 || position[1] == -1){
             cout<<"Tie!!"<<endl;
             display(board);
